@@ -4,145 +4,147 @@ import json
 import sys
 
 
-# -----------------------------
-# 🔁 Utility Functions
-# -----------------------------
+# ===========================
+# Utility Functions
+# ===========================
 
-def todo_to_dict(todo):
-    """
-    Converts a ToDo object into a plain dictionary.
-    This is used before serializing the data to JSON.
-    """
+def serialize_todo(todo):
+    """Convert a ToDo object to a dictionary for JSON serialization."""
     return {
         "id": todo.id,
         "name": todo.name,
         "description": todo.description,
         "complete": todo.complete,
-        "dueDate": todo.dueDate
+        "dueDate": todo.dueDate.isoformat()
     }
 
-def convertToJSON(todoDict):
-    """
-    Converts the entire todo dictionary into a JSON-formatted string.
-    Assumes all ToDos have been converted to dictionaries.
-    """
-    converted = {
-        str(id): todo_to_dict(todoDict[id])
-        for id in todoDict
-    }
-    return json.dumps(converted, indent=2)
 
-def save_todos(todoDict):
-    """
-    Saves the current state of the todo list to a JSON file.
-    """
-    json_string = convertToJSON(todoDict)
+def todos_to_json(todos):
+    """Convert todos dictionary to JSON string."""
+    serialized = {
+        todo_id: serialize_todo(todo)
+        for todo_id, todo in todos.items()
+    }
+    return json.dumps(serialized, indent=2)
+
+
+def save_todos(todos):
+    """Save todos to JSON file."""
+    json_string = todos_to_json(todos)
     with open("todos.json", "w") as f:
         f.write(json_string)
 
+
 def load_todos():
-    """
-    Loads the todos from the JSON file and returns them as raw data.
-    Will raise FileNotFoundError if the file does not exist.
-    """
+    """Load todos from JSON file. Raises FileNotFoundError if file doesn't exist."""
     with open("todos.json", "r") as f:
-        data = json.load(f)
-    return data
+        return json.load(f)
 
 
-# -----------------------------
-# 📋 Core ToDo Functionality
-# -----------------------------
+def deserialize_todos(raw_data):
+    """Convert raw JSON data back into ToDo objects."""
+    return {
+        todo_id: ToDo(
+            todo_data["name"],
+            todo_data["description"],
+            todo_data["complete"],
+            datetime.fromisoformat(todo_data["dueDate"])
+        )
+        for todo_id, todo_data in raw_data.items()
+    }
 
-def add_todo(todoList):
-    """
-    Prompts the user to add a new todo.
-    Creates a new ToDo object and saves the updated list.
-    """
-    name = input("Please enter the name of your ToDo: ")
-    desc = input("Give your todo a description: ")
-    dueDate = input("Please enter a due date with the following format: YYYY-MM-DD: ")
 
-    new_todo = ToDo(name, desc, False, dueDate)
-    todoList[new_todo.id] = new_todo
+# ===========================
+# Core ToDo Operations
+# ===========================
 
-    save_todos(todoList)
+def add_todo(todos):
+    """Prompt user to create and add a new todo."""
+    name = input("Enter todo name: ")
+    description = input("Enter todo description: ")
 
-    print(f"\nNew entry added!\n\nName: {new_todo.name}\nDescription: {new_todo.description}\nDue Date: {new_todo.dueDate}")
-    return todoList
+    due_date = None
+    while due_date is None:
+        date_input = input("Enter due date (YYYY-MM-DD): ")
+        try:
+            due_date = datetime.strptime(date_input, "%Y-%m-%d")
+        except ValueError as e:
+            print(f"Invalid date format. Example: 2025-12-27\n")
 
-def list_todos(todoList):
-    """
-    Displays all todos in the list with their UUID, name, due date, and completion status.
-    """
-    print("\nToDo List:")
-    for id, todo in todoList.items():
-        print(f"[{id}] {todo.name} - Description: {todo.description}\nDue: {todo.dueDate} - Completed: {todo.complete}")
+    new_todo = ToDo(name, description, False, due_date)
+    todos[new_todo.id] = new_todo
+    save_todos(todos)
 
-def complete_todo(todoList):
-    """
-    Prompts the user to complete a todo by UUID.
-    Marks it complete and removes it from the list.
-    """
-    list_todos(todoList)
-    completedToDo = input("\nPlease enter the UUID of the ToDo you would like to complete: ")
+    print(f"\n✓ Todo added!")
+    print(f"  Name: {new_todo.name}")
+    print(f"  Description: {new_todo.description}")
+    print(f"  Due: {new_todo.dueDate.strftime('%Y-%m-%d')}\n")
 
-    if completedToDo in todoList:
-        todoList[completedToDo].complete = True
-        del todoList[completedToDo]
-        save_todos(todoList)
 
-        print("\nToDo marked as complete and removed.")
-        list_todos(todoList)
+def list_todos(todos):
+    """Display all todos."""
+    if not todos:
+        print("\nNo todos found.\n")
+        return
+
+    print("\n" + "=" * 60)
+    print("Todo List")
+    print("=" * 60)
+    for todo_id, todo in todos.items():
+        status = "✓ Done" if todo.complete else "○ Pending"
+        print(f"\n[{todo_id}]")
+        print(f"  {todo.name}")
+        print(f"  Description: {todo.description}")
+        print(f"  Due: {todo.dueDate.strftime('%Y-%m-%d')}")
+        print(f"  Status: {status}")
+    print("\n" + "=" * 60 + "\n")
+
+
+def complete_todo(todos):
+    """Mark a todo as complete and remove it from the list."""
+    list_todos(todos)
+    todo_id = input("Enter the ID of the todo to complete: ")
+
+    if todo_id in todos:
+        todos[todo_id].complete = True
+        del todos[todo_id]
+        save_todos(todos)
+        print("✓ Todo marked complete and removed.\n")
     else:
-        print("\nInvalid UUID entered. No changes made.")
-
-    return todoList
+        print("Invalid ID. No changes made.\n")
 
 
-# -----------------------------
-# 🚀 Entry Point
-# -----------------------------
+# ===========================
+# Main Entry Point
+# ===========================
 
 def main():
-    """
-    Loads existing todos from file (if any).
-    If no file exists, starts with an empty list.
-    Calls the desired function from args using sys.argv.
-    """
-    if len(sys.argv) < 2 or len(sys.argv) > 2:
-        print("Usage: python3 main.py <action> \'add\', \'complete\', \'list\' can be used.")
+    """Load todos and execute the requested command."""
+    if len(sys.argv) != 2:
+        print("Usage: python3 main.py <command>")
+        print("Commands: add, list, complete")
         sys.exit(1)
-    
+
+    # Load existing todos or start with empty list
     try:
         raw_data = load_todos()
-        todoList = {
-            id: ToDo(
-                todo_data["name"],
-                todo_data["description"],
-                todo_data["complete"],
-                todo_data["dueDate"]
-            )
-            for id, todo_data in raw_data.items()
-        }
+        todos = deserialize_todos(raw_data)
     except FileNotFoundError:
-        todoList = {}
+        todos = {}
 
     command = sys.argv[1]
 
     if command == "add":
-        add_todo(todoList)
-        sys.exit(0)
-    
+        add_todo(todos)
     elif command == "list":
-        list_todos(todoList)
-        sys.exit(0)
-
+        list_todos(todos)
     elif command == "complete":
-        complete_todo(todoList)
-        sys.exit(0)
+        complete_todo(todos)
     else:
-        print(f"unknown command: {command}")
+        print(f"Unknown command: '{command}'")
+        print("Available commands: add, list, complete")
+        sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
