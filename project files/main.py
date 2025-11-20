@@ -107,7 +107,6 @@ def complete_todo(todos):
 
     if todo_id in todos:
         todos[todo_id].complete = True
-        del todos[todo_id]
         save_todos(todos)
         print("✓ Todo marked complete and removed.\n")
     else:
