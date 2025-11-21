@@ -100,7 +100,7 @@ def list_todos(todos):
         print(f"  Status: {status}")
         if todo.completedDate:
             print(f"  Date Completed: {todo.completedDate.strftime('%Y-%m-%d')}")
-            
+
     print("\n" + "=" * 60 + "\n")
 
 def list_completed_todos(todos):
@@ -184,6 +184,16 @@ def main():
     try:
         raw_data = load_todos()
         todos = deserialize_todos(raw_data)
+
+        patched = False
+        for todo in todos.values():
+            if todo.complete and not todo.completedDate:
+                todo.completedDate = datetime.now()
+                patched = True
+        
+        if patched:
+            save_todos(todos)
+            
     except FileNotFoundError:
         todos = {}
 
