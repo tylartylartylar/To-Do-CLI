@@ -15,7 +15,8 @@ def serialize_todo(todo):
         "name": todo.name,
         "description": todo.description,
         "complete": todo.complete,
-        "dueDate": todo.dueDate.isoformat()
+        "dueDate": todo.dueDate.isoformat(),
+        "completedDate": todo.completedDate.isoformat() if todo.completedDate else None
     }
 
 
@@ -48,7 +49,8 @@ def deserialize_todos(raw_data):
             todo_data["name"],
             todo_data["description"],
             todo_data["complete"],
-            datetime.fromisoformat(todo_data["dueDate"])
+            datetime.fromisoformat(todo_data["dueDate"]),
+            datetime.fromisoformat(todo_data.get("completedDate")) if todo_data.get("completedDate") else None
         )
         for todo_id, todo_data in raw_data.items()
     }
@@ -80,7 +82,6 @@ def add_todo(todos):
     print(f"  Description: {new_todo.description}")
     print(f"  Due: {new_todo.dueDate.strftime('%Y-%m-%d')}\n")
 
-
 def list_todos(todos):
     """Display all todos."""
     if not todos:
@@ -97,11 +98,13 @@ def list_todos(todos):
         print(f"  Description: {todo.description}")
         print(f"  Due: {todo.dueDate.strftime('%Y-%m-%d')}")
         print(f"  Status: {status}")
+        if todo.completedDate:
+            print(f"  Date Completed: {todo.completedDate.strftime('%Y-%m-%d')}")
+            
     print("\n" + "=" * 60 + "\n")
 
 def list_completed_todos(todos):
     """Display only completed todos."""
-
     completed = 0
 
     if not todos:
@@ -119,6 +122,7 @@ def list_completed_todos(todos):
                 print(f"  Description: {todo.description}")
                 print(f"  Due: {todo.dueDate.strftime('%Y-%m-%d')}")
                 print(f"  Status: {status}")
+                print(f"  Date Completed: {todo.completedDate.strftime('%Y-%m-%d')}")
                 completed += 1
     if completed == 0:
         print("0 Completed ToDos")
@@ -158,8 +162,9 @@ def complete_todo(todos):
 
     if todo_id in todos:
         todos[todo_id].complete = True
+        todos[todo_id].completedDate = datetime.now()
         save_todos(todos)
-        print("✓ Todo marked complete and removed.\n")
+        print("✓ Todo marked complete\n")
     else:
         print("Invalid ID. No changes made.\n")
 
