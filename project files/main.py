@@ -99,6 +99,57 @@ def list_todos(todos):
         print(f"  Status: {status}")
     print("\n" + "=" * 60 + "\n")
 
+def list_completed_todos(todos):
+    """Display only completed todos."""
+
+    completed = 0
+
+    if not todos:
+        print("\nNo todos found.\n")
+        return
+    
+    print("\n" + "=" * 60)
+    print("Completed Todos")
+    print("=" * 60)
+    for todo_id, todo in todos.items():
+        if todo.complete:
+                status = "✓ Done" if todo.complete else "○ Pending"
+                print(f"\n[{todo_id}]")
+                print(f"  {todo.name}")
+                print(f"  Description: {todo.description}")
+                print(f"  Due: {todo.dueDate.strftime('%Y-%m-%d')}")
+                print(f"  Status: {status}")
+                completed += 1
+    if completed == 0:
+        print("0 Completed ToDos")
+    
+    print("\n" + "=" * 60 + "\n")
+
+def list_incomplete_todos(todos):
+    """Display only incomplete todos."""
+
+    incomplete = 0
+
+    if not todos:
+        print("\nNo todos found.\n")
+        return
+    
+    print("\n" + "=" * 60)
+    print("Completed Todos")
+    print("=" * 60)
+    for todo_id, todo in todos.items():
+        if todo.complete == False:
+                status = "○ Pending"
+                print(f"\n[{todo_id}]")
+                print(f"  {todo.name}")
+                print(f"  Description: {todo.description}")
+                print(f"  Due: {todo.dueDate.strftime('%Y-%m-%d')}")
+                print(f"  Status: {status}")
+                incomplete += 1
+    if incomplete == 0:
+        print("0 ToDos")
+    
+    print("\n" + "=" * 60 + "\n")
 
 def complete_todo(todos):
     """Mark a todo as complete and remove it from the list."""
@@ -137,6 +188,10 @@ def main():
         add_todo(todos)
     elif command == "list":
         list_todos(todos)
+    elif command == "show_completed":
+        list_completed_todos(todos)
+    elif command == "show_incomplete":
+        list_incomplete_todos(todos)
     elif command == "complete":
         complete_todo(todos)
     else:
